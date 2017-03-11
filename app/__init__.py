@@ -26,4 +26,41 @@ def create_binary_image(im):
 
   return morphed
 
+def imclearborder(im, radius):
+  im = im.copy()
+
+  # given a black and white image, first find all of its contours
+  _, contours, _ = cv2.findContours(im, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+  # get dimensions of image
+  rows, cols = im.shape
+
+  # list of contours that touch the border
+  contour_list = []
+
+  # for each contour
+  for idx in np.arange(len(contours)):
+    # get the i'th contour
+    cnt = contours[idx]
+
+    # look at each point in the contour
+    for pt in cnt:
+      row = pt[0][1]
+      col = pt[0][0]
+
+      # if this is within the radius of the border
+      # this contour will be removed
+      check1 = (row >= 0 and row < radius) or (row >= rows - 1 - radius and row < rows)
+      check2 = (col >= 0 and col < radius) or (col >= cols - 1 - radius and col < cols)
+
+      if check1 or check2:
+        contour_list.append(idx)
+        break
+
+  # draw black pixels on the remove contours
+  for idx in contour_list:
+    cv2.drawContours(im, contours, idx, (0, 0, 0), -1)
+
+  return im
+
 
