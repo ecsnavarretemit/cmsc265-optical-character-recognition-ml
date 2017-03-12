@@ -10,7 +10,7 @@ import cv2
 import glob
 import string
 import numpy as np
-from app import create_cv_im_instance, create_binary_image, imclearborder, matches_contours
+from app import create_binary_image, imclearborder, matches_contours
 
 # In ASCII numbers (0-9 and lowercase/uppercase letters)
 VALID_CHARACTERS = [ord(char) for char in string.digits + string.ascii_letters]
@@ -21,37 +21,19 @@ RESIZED_IMAGE_HEIGHT = 30
 
 # TODO: add checking if the passed image is a grayscale image
 # TODO: replace sys.exists(1) with a custom exception
-def create_knowledgebase(data_src_dir, data_dst, **kwargs):
-  file_exts = kwargs.get('file_exts', ['jpg', 'png'])
+def create_knowledgebase(cv_img_instances, data_dst, **kwargs):
   border_radius = kwargs.get('border_radius', 50)
   show_logs = kwargs.get('show_logs', True)
   contour_match_threshold = kwargs.get('contour_match_threshold', 0.25)
   clean_near_border_pixels = kwargs.get('clean_near_border_pixels', True)
 
-  if not os.path.exists(data_src_dir):
-    print(f'Source of Data: {data_src_dir} does not exist')
-    sys.exit(1)
-
   if not os.path.exists(data_dst):
     print(f'Destination of Data: {data_dst} does not exist')
-    sys.exit(1)
-
-  # get all images in the directory that matches the extensions provided
-  images = []
-  for ext in file_exts:
-    images.extend(glob.glob(f"{data_src_dir}/*.{ext}"))
-
-  # terminate if no images are found
-  if len(images) == 0:
-    print(f'No images in the source directory {data_src_dir}')
     sys.exit(1)
 
   # initialize data containers
   matched_characters = []
   matched_images = np.empty((0, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
-
-  # convert images list to cv image instances list
-  cv_img_instances = list(map(create_cv_im_instance, images))
 
   print("Instruction: Please press the character that corresponds to the character being presented in the window.")
 

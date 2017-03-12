@@ -4,7 +4,10 @@
 # Licensed under MIT
 # Version 1.0.0-alpha1
 
+import os
+import sys
 import cv2
+import glob
 import numpy as np
 
 def create_cv_im_instance(image_path):
@@ -12,6 +15,27 @@ def create_cv_im_instance(image_path):
     'path': image_path,
     'cv_im': cv2.imread(image_path)
   }
+
+# TODO: replace sys.exists(1) with a custom exception
+def create_cv_im_instances_from_dir(image_dir_path, **kwargs):
+  file_exts = kwargs.get('file_exts', ['jpg', 'png'])
+
+  if not os.path.exists(image_dir_path):
+    print(f'Directory of Images: {image_dir_path} does not exist')
+    sys.exit(1)
+
+  # get all images in the directory that matches the extensions provided
+  images = []
+  for ext in file_exts:
+    images.extend(glob.glob(f"{image_dir_path}/*.{ext}"))
+
+  # terminate if no images are found
+  if len(images) == 0:
+    print(f'No images in the source directory {image_dir_path}')
+    sys.exit(1)
+
+  # convert images list to cv image instances list
+  return list(map(create_cv_im_instance, images))
 
 # TODO: "can be possibly" made more cleaner by using function currying and map-reduce
 def matches_contours(contours_collection, contour, **kwargs):
