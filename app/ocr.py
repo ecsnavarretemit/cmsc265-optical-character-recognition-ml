@@ -95,4 +95,40 @@ def initialize_knn_knowledge(char_knowledge_src, image_knowlege_src, **kwargs):
 
   return knn
 
+def detect_characters_by_knn(src, dst, knn):
+  # initialize string to hold all detected characters
+  detected_character_str = ""
+
+  _, contours, _ = cv2.findContours(src, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+  for contour in contours:
+    # get bounding rectangle of the detected contour
+    [x, y, w, h] = cv2.boundingRect(contour)
+
+    # crop the letter
+    cropped_letter = src[y:y+h, x:x+w]
+
+    cropped_letter_resized = cv2.resize(cropped_letter, (RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT))
+
+    matched_image = cropped_letter_resized.reshape((1, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
+
+    matched_image = np.float32(matched_image)
+
+    # returns the (return_value, results, neighbors, distance). we need only the results and discard other values
+    _, results, _, _ = knn.findNearest(matched_image, k=1)
+
+    detected_char = str(chr(int(results[0][0])))
+
+    # proceed to the next iteration when no character is detected
+    if detected_char is None:
+      continue
+
+    # draw rectangle around the contour
+    cv2.rectangle(dst, (x, y), (x + w, y + h), (65, 203, 62), 2)
+
+    # append the detected character to the string of detected characters
+    detected_character_str = detected_character_str + detected_char
+
+  return detected_character_str
+
 
