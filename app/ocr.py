@@ -7,8 +7,10 @@
 import os
 import sys
 import cv2
+import glob
 import string
 import numpy as np
+from app import create_cv_im_instance, create_binary_image, imclearborder, matches_contours
 
 # In ASCII numbers (0-9 and lowercase/uppercase letters)
 VALID_CHARACTERS = [ord(char) for char in string.digits + string.ascii_letters]
@@ -19,47 +21,107 @@ RESIZED_IMAGE_HEIGHT = 30
 
 # TODO: add checking if the passed image is a grayscale image
 # TODO: replace sys.exists(1) with a custom exception
-def create_knowledgebase(im, data_dst):
-  if not os.path.exists(data_dst):
-    print(f'Path: {data_dst} does not exist')
+def create_knowledgebase(data_src_dir, data_dst, **kwargs):
+  file_exts = kwargs.get('file_exts', ['jpg', 'png'])
+  border_radius = kwargs.get('border_radius', 50)
+  show_logs = kwargs.get('show_logs', True)
+  contour_match_threshold = kwargs.get('contour_match_threshold', 0.25)
+
+  if not os.path.exists(data_src_dir):
+    print(f'Source of Data: {data_src_dir} does not exist')
     sys.exit(1)
 
-  # copy the image instance to prevent any modifications
-  cv_im = im.copy()
+  if not os.path.exists(data_dst):
+    print(f'Destination of Data: {data_dst} does not exist')
+    sys.exit(1)
 
-  # we only need the contours, just discard the first and last elements returned by the function
-  _, contours, _ = cv2.findContours(cv_im, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+  # get all images in the directory that matches the extensions provided
+  images = []
+  for ext in file_exts:
+    images.extend(glob.glob(f"{data_src_dir}/*.{ext}"))
 
+  # terminate if no images are found
+  if len(images) == 0:
+    print(f'No images in the source directory {data_src_dir}')
+    sys.exit(1)
+
+  # initialize data containers
   matched_characters = []
   matched_images = np.empty((0, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
 
-  for contour in contours:
-    # get rectangle bounding contour
-    [x, y, w, h] = cv2.boundingRect(contour)
+  # convert images list to cv image instances list
+  cv_img_instances = list(map(create_cv_im_instance, images))
 
-    # crop the letter out of the training image
-    cropped_letter = cv_im[y:y+h, x:x+w]
+  print("Instruction: Please press the character that corresponds to the character being presented in the window.")
 
-    # resize the cropped letter
-    cropped_letter_resized = cv2.resize(cropped_letter, (RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT))
+  # Create holder for the previous processed contour, pressed_key for comparison
+  contour_match_status = False
+  prev_matched_contours = []
+  prev_pressed_key = None
 
-    # show the characters to the trainor and wait for any key press
-    cv2.imshow("Cropped Letter", cropped_letter)
-    cv2.imshow("Cropped Letter - Resized", cropped_letter_resized)
+  for cv_item in cv_img_instances:
+    if show_logs is True:
+      print(f"Extracting characters from: {cv_item['path']}")
 
-    pressed_key = cv2.waitKey(0)
+    # convert to grayscale
+    gray_image = cv2.cvtColor(cv_item['cv_im'], cv2.COLOR_BGR2GRAY)
 
-    # if the escape key (ascii 27) is pressed, terminate the training
-    if pressed_key == 27:
-      sys.exit(0)
-    elif pressed_key in VALID_CHARACTERS:
-      # append the matched ascii equivalent of the pressed key to the list
-      matched_characters.append(pressed_key)
+    # convert to binary image
+    binary_image = create_binary_image(gray_image)
 
-      matched_image = cropped_letter_resized.reshape((1, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
-      matched_image = np.float32(matched_image)
+    # remove borders from the binary image
+    binary_image = imclearborder(binary_image.copy(), border_radius)
 
-      matched_images = np.append(matched_images, matched_image, 0)
+    # we only need the contours, just discard the first and last elements returned by the function
+    _, contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    for contour in contours:
+      if len(prev_matched_contours) > 0:
+        contour_match_status = matches_contours(prev_matched_contours, contour, threshold=contour_match_threshold)
+        prev_matched_contours.clear()
+
+        print(f"Contour match status: {str(contour_match_status)}")
+
+      # append the first detected contour to the list
+      if len(prev_matched_contours) == 0:
+        prev_matched_contours.append(contour)
+
+      # get rectangle bounding contour
+      [x, y, w, h] = cv2.boundingRect(contour)
+
+      # crop the letter out of the training image
+      cropped_letter = binary_image[y:y+h, x:x+w]
+
+      # resize the cropped letter
+      cropped_letter_resized = cv2.resize(cropped_letter, (RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT))
+
+      pressed_key = None
+
+      if contour_match_status is True:
+        print("Skipping contour since it falls within below the threshold.")
+        pressed_key = prev_pressed_key
+      else:
+        # show the characters to the trainor and wait for any key press
+        cv2.imshow("Cropped Letter", cropped_letter)
+        cv2.imshow("Cropped Letter - Resized", cropped_letter_resized)
+
+        pressed_key = cv2.waitKey(0)
+        prev_pressed_key = pressed_key
+
+      # if the escape key (ascii 27) is pressed, terminate the training
+      if pressed_key == 27:
+        if show_logs is True:
+          print("Cancelling training. Thank you.")
+
+        sys.exit(0)
+      elif pressed_key in VALID_CHARACTERS:
+        # append the matched ascii equivalent of the pressed key to the list
+        matched_characters.append(pressed_key)
+
+        matched_image = cropped_letter_resized.reshape((1, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
+        matched_image = np.float32(matched_image)
+
+        matched_images = np.append(matched_images, matched_image, 0)
 
   matched_characters_flattened = np.array(matched_characters, np.float32)
   matched_characters_reshaped = matched_characters_flattened.reshape((matched_characters_flattened.size, 1))
@@ -69,8 +131,6 @@ def create_knowledgebase(im, data_dst):
 
   # destroy any existing windows
   cv2.destroyAllWindows()
-
-  return
 
 def initialize_knn_knowledge(char_knowledge_src, image_knowlege_src, **kwargs):
   char_knowledge_dtype = kwargs.get('char_knowledge_dtype', np.float32)

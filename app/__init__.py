@@ -7,6 +7,31 @@
 import cv2
 import numpy as np
 
+def create_cv_im_instance(image_path):
+  return {
+    'path': image_path,
+    'cv_im': cv2.imread(image_path)
+  }
+
+# TODO: "can be possibly" made more cleaner by using function currying and map-reduce
+def matches_contours(contours_collection, contour, **kwargs):
+  threshold = kwargs.get('threshold', 0.4)
+  comparison_method = kwargs.get('comparison_method', 1)
+  comparison_method_param = kwargs.get('comparison_method_param', 0)
+
+  # return flag
+  flag = True
+
+  for prev_contour in contours_collection:
+    probability = cv2.matchShapes(contour, prev_contour, comparison_method, comparison_method_param)
+
+    # break out immediately since one of them is above the threshold
+    if probability > threshold:
+      flag = False
+      break
+
+  return flag
+
 def create_binary_image(im):
   # create a copy of the image
   im = im.copy()
