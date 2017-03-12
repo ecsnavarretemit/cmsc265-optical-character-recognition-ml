@@ -79,6 +79,8 @@ def create_knowledgebase(cv_img_instances, data_dst, **kwargs):
 
       pressed_key = None
 
+      # use the previously pressed key if the contour comparison equates to True,
+      # or else require user input
       if contour_match_status is True:
         pressed_key = prev_pressed_key
       else:
@@ -104,9 +106,11 @@ def create_knowledgebase(cv_img_instances, data_dst, **kwargs):
 
         matched_images = np.append(matched_images, matched_image, 0)
 
+  # preprocess data before saving to the file
   matched_characters_flattened = np.array(matched_characters, np.float32)
   matched_characters_reshaped = matched_characters_flattened.reshape((matched_characters_flattened.size, 1))
 
+  # save the assembled knowledge to the filesystem
   np.savetxt(os.path.join(data_dst, 'matched_characters.txt'), matched_characters_reshaped)
   np.savetxt(os.path.join(data_dst, 'matched_images.txt'), matched_images)
 
@@ -125,13 +129,15 @@ def initialize_knn_knowledge(char_knowledge_src, image_knowlege_src, **kwargs):
     print(f'Image Knowledge Path: {image_knowlege_src} does not exist')
     sys.exit(1)
 
+  # read the knowledge saved on the file system
   matched_characters = np.loadtxt(char_knowledge_src, char_knowledge_dtype)
   matched_images = np.loadtxt(image_knowlege_src, image_knowledge_dtype)
 
+  # re-structure so that it can used by KNN
   matched_characters = matched_characters.reshape((matched_characters.size, 1))
 
+  # create a KNN instance and train it
   knn = cv2.ml.KNearest_create()
-
   knn.train(matched_images, cv2.ml.ROW_SAMPLE, matched_characters)
 
   return knn
@@ -175,6 +181,7 @@ def detect_characters_by_knn(src, dst, knn):
 def count_by_characters(detected_chars):
   char_dict = {}
 
+  # loop through all valid characters and count all instances each character
   for valid_char in VALID_CHARACTERS:
     resolved_char = str(chr(int(valid_char)))
 
