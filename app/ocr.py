@@ -72,4 +72,27 @@ def create_knowledgebase(im, data_dst):
 
   return
 
+def initialize_knn_knowledge(char_knowledge_src, image_knowlege_src, **kwargs):
+  char_knowledge_dtype = kwargs.get('char_knowledge_dtype', np.float32)
+  image_knowledge_dtype = kwargs.get('image_knowledge_dtype', np.float32)
+
+  if not os.path.exists(char_knowledge_src):
+    print(f'Character Knowledge Path: {char_knowledge_src} does not exist')
+    sys.exit(1)
+
+  if not os.path.exists(image_knowlege_src):
+    print(f'Image Knowledge Path: {image_knowlege_src} does not exist')
+    sys.exit(1)
+
+  matched_characters = np.loadtxt(char_knowledge_src, char_knowledge_dtype)
+  matched_images = np.loadtxt(image_knowlege_src, image_knowledge_dtype)
+
+  matched_characters = matched_characters.reshape((matched_characters.size, 1))
+
+  knn = cv2.ml.KNearest_create()
+
+  knn.train(matched_images, cv2.ml.ROW_SAMPLE, matched_characters)
+
+  return knn
+
 
