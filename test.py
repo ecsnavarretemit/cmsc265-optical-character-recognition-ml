@@ -13,7 +13,7 @@ import numpy as np
 from app import create_binary_image, imclearborder
 from app.ocr import initialize_knn_knowledge, detect_characters_by_knn, count_by_characters
 
-image = os.path.join(os.getcwd(), "assets/img/training/set-1.jpg")
+image = os.path.join(os.getcwd(), "assets/img/test/set-3.jpg")
 cv_image = cv2.imread(image)
 
 # convert to grayscale
@@ -24,10 +24,6 @@ binary_image = create_binary_image(gray_image)
 
 # remove borders from the binary image
 binary_image = imclearborder(binary_image.copy(), 50)
-
-# [testing] ::start
-allContoursWithData = []
-validContoursWithData = []
 
 k_nearest = initialize_knn_knowledge(os.path.join(os.getcwd(), "data/ocr/matched_characters.txt"),
                                      os.path.join(os.getcwd(), "data/ocr/matched_images.txt"))
@@ -46,6 +42,5 @@ for char, char_count in stats.items():
 cv2.imshow("Boxed", cv2.pyrDown(cv2.pyrDown(cv_image)))
 cv2.waitKey(0)
 cv2.destroyAllWindows()
-# [testing] ::end
 
 
