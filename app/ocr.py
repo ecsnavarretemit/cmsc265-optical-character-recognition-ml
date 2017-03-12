@@ -131,4 +131,14 @@ def detect_characters_by_knn(src, dst, knn):
 
   return detected_character_str
 
+def count_by_characters(detected_chars):
+  char_dict = {}
+
+  for valid_char in VALID_CHARACTERS:
+    resolved_char = str(chr(int(valid_char)))
+
+    char_dict[resolved_char] = detected_chars.count(resolved_char)
+
+  return char_dict
+
 
