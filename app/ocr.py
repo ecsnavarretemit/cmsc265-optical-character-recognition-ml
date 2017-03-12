@@ -26,6 +26,7 @@ def create_knowledgebase(data_src_dir, data_dst, **kwargs):
   border_radius = kwargs.get('border_radius', 50)
   show_logs = kwargs.get('show_logs', True)
   contour_match_threshold = kwargs.get('contour_match_threshold', 0.25)
+  clean_near_border_pixels = kwargs.get('clean_near_border_pixels', True)
 
   if not os.path.exists(data_src_dir):
     print(f'Source of Data: {data_src_dir} does not exist')
@@ -70,7 +71,8 @@ def create_knowledgebase(data_src_dir, data_dst, **kwargs):
     binary_image = create_binary_image(gray_image)
 
     # remove borders from the binary image
-    binary_image = imclearborder(binary_image.copy(), border_radius)
+    if clean_near_border_pixels is True:
+      binary_image = imclearborder(binary_image.copy(), border_radius)
 
     # we only need the contours, just discard the first and last elements returned by the function
     _, contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
