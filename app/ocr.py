@@ -64,8 +64,6 @@ def create_knowledgebase(cv_img_instances, data_dst, **kwargs):
         contour_match_status = matches_contours(prev_matched_contours, contour, threshold=contour_match_threshold)
         prev_matched_contours.clear()
 
-        print(f"Contour match status: {str(contour_match_status)}")
-
       # append the first detected contour to the list
       if len(prev_matched_contours) == 0:
         prev_matched_contours.append(contour)
@@ -82,7 +80,6 @@ def create_knowledgebase(cv_img_instances, data_dst, **kwargs):
       pressed_key = None
 
       if contour_match_status is True:
-        print("Skipping contour since it falls within below the threshold.")
         pressed_key = prev_pressed_key
       else:
         # show the characters to the trainor and wait for any key press
