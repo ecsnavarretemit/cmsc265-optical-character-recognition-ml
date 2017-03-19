@@ -4,7 +4,7 @@
 #
 # Copyright(c) Exequiel Ceasar Navarrete <esnavarrete1@up.edu.ph>
 # Licensed under MIT
-# Version 1.0.0-alpha2
+# Version 1.0.0-alpha3
 
 import os
 import cv2
@@ -38,6 +38,10 @@ stats = count_by_characters(detected_character_str)
 # show the stats of the characters
 for char, char_count in stats.items():
   print(f"{char}={char_count}")
+
+# save the detected characters to a text file
+with open('detected_characters.txt', 'w') as chars_f:
+  chars_f.write(detected_character_str)
 
 cv2.imshow("Boxed", cv2.pyrDown(cv2.pyrDown(cv_image)))
 cv2.waitKey(0)

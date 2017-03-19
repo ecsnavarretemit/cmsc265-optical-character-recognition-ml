@@ -32,7 +32,13 @@ Follow these steps to install the setup the application:
 
 ## Running the Program
 
-You can run the python scripts by invoking `python <program>.py` or `./<program>.py`
+### Training the OCR
+
+You can train the OCR by running the command `python train.py` or using the command line tool provided by typing the command `./ocr.py train <training_images_directory> <output_knowledge_data_path>`. For more options in the command line tool, you can use `./ocr.py train --help`.
+
+### Testing Identification Knowledge
+
+You can verify the ability of the OCR to recognize the characters from the test image by running `python test.py` or using the command line tool provided by typing the command `./ocr.py recognize <input_image> <knowledge_data_path>`. For more options in the command line tool, you can use `./ocr.py recognize --help`.
 
 ## License
 
